@@ -1,152 +1,150 @@
-# Chatbot
+# 🤖 Chatbot WiData
 
-Un semplice progetto Python per creare e sperimentare un chatbot. Questo repository contiene il codice di base per costruire, testare e sviluppare un chatbot che può essere collegato a diversi backend di modelli di linguaggio (servizi esterni o modelli locali).
+Assistente virtuale intelligente per **WiData Srl** — startup IoT e Smart Cities di Sassari — costruito con [Streamlit](https://streamlit.io/) e [Claude (Anthropic)](https://www.anthropic.com/), con supporto RAG su documenti PDF.
 
-## Panoramica
+---
 
-Questo progetto fornisce una base modulare per:
+## ✨ Funzionalità
 
-- Ricevere e pre-elaborare input testuali
-- Interagire con un modello di linguaggio (API esterne o wrapper locali)
-- Gestire lo stato della conversazione e le risposte
-- Testare e sviluppare nuove funzionalità in modo iterativo
+- 💬 **Chat conversazionale** con memoria della sessione (multi-turn)
+- 📄 **RAG su PDF** — carica un documento e il chatbot risponde basandosi sul suo contenuto
+- 🧠 **Powered by Claude Haiku** (`claude-haiku-4-5`) via API Anthropic con streaming in tempo reale
+- 🛡️ **Guardrail di input** — blocco di prompt injection e limitazione a 2000 caratteri
+- ⚙️ **Configurazione dinamica** dalla sidebar: nome chatbot, temperature, numero di chunk RAG
+- 📊 **Monitoraggio token e costi** stimati in tempo reale
+- 👍 **Feedback utente** con sistema thumbs up/down integrato
+- 📝 **Logging conversazioni** su file `.jsonl` per audit e analisi
 
-## Caratteristiche
+---
 
-- Struttura modulare per separare I/O, logica e integrazioni
-- Configurazione tramite variabili d'ambiente o file `.env`
-- Script di avvio in locale e suggerimenti per il deploy
-- Esempi e test di base per iniziare rapidamente
+## 🏗️ Architettura
 
-## Requisiti
-
-- Python 3.8 o superiore
-- pip
-- virtualenv (consigliato)
-
-## Installazione
-
-1. Clona il repository:
-
-```bash
-git clone https://github.com/lorymasia/chatbot.git
-cd chatbot
+```
+┌─────────────────────────────────────────┐
+│              Streamlit UI               │
+│  ┌──────────┐        ┌───────────────┐  │
+│  │ Sidebar  │        │  Chat Window  │  │
+│  │ Settings │        │  (streaming)  │  │
+│  │ PDF Load │        └───────────────┘  │
+│  └──────────┘                           │
+└────────────────────┬────────────────────┘
+                     │
+          ┌──────────▼──────────┐
+          │   RAG Pipeline      │
+          │  chunka_testo()     │
+          │  indicizza_pdf()    │
+          │  cerca_rag()        │
+          └──────────┬──────────┘
+                     │
+          ┌──────────▼──────────┐
+          │  Anthropic Claude   │
+          │  (Haiku streaming)  │
+          └─────────────────────┘
 ```
 
-2. Crea e attiva un ambiente virtuale:
+Il testo dei PDF viene suddiviso in chunk con overlap, indicizzato in memoria e recuperato tramite keyword matching prima di ogni chiamata al modello.
 
-```bash
-python -m venv .venv
-# Linux / macOS
-source .venv/bin/activate
-# Windows (PowerShell)
-.\.venv\Scripts\Activate.ps1
+---
+
+## 📦 Requisiti
+
+```
+anthropic>=0.40.0
+streamlit>=1.35.0
+pypdf>=4.0.0
+requests>=2.31.0
 ```
 
-3. Installa le dipendenze:
+Installa le dipendenze con:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Se non è presente `requirements.txt`, installa le librerie necessarie in base al backend scelto (ad esempio `openai`, `requests`, `python-dotenv`, ecc.).
+---
 
-## Configurazione
+## 🚀 Avvio rapido
 
-Le impostazioni si possono fornire tramite variabili d'ambiente o un file `.env` (consigliato per lo sviluppo). Esempio di variabili utili:
+### In locale
 
-- OPENAI_API_KEY: chiave API per servizi esterni (se usi OpenAI)
-- BOT_MODEL: nome del modello di linguaggio da utilizzare
-- LOG_LEVEL: livello di logging (DEBUG, INFO, WARNING, ERROR)
-- PORT: porta su cui esporre eventuali endpoint web
+1. **Clona il repository**
+   ```bash
+   git clone https://github.com/lorymasia/chatbot.git
+   cd chatbot
+   ```
 
-Esempio di file `.env`:
+2. **Crea un ambiente virtuale**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/macOS
+   venv\Scripts\activate     # Windows
+   ```
 
-```env
-OPENAI_API_KEY=sk-...your-key...
-BOT_MODEL=gpt-4
-LOG_LEVEL=DEBUG
-PORT=8000
-```
+3. **Installa le dipendenze**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Attenzione: non committare mai chiavi o segreti in un repository pubblico.
+4. **Configura la API key Anthropic**
 
-## Esempio di utilizzo
+   Crea il file `.streamlit/secrets.toml`:
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   ```
+   Oppure esporta come variabile d'ambiente:
+   ```bash
+   export ANTHROPIC_API_KEY="sk-ant-..."
+   ```
 
-Esempio minimale per avviare il bot (adatta il comando agli script del repository):
+5. **Avvia l'app**
+   ```bash
+   streamlit run app_completa.py
+   ```
+   
+---
 
-```bash
-# Avviare il bot in modalità sviluppo
-python -m chatbot.main
-# oppure
-python run.py
-```
-
-Un semplice snippet (esempio) per inviare una richiesta al bot:
-
-```python
-from chatbot import Bot
-bot = Bot()
-response = bot.ask("Ciao, come stai?")
-print(response)
-```
-
-Adatta l'esempio alla struttura reale del progetto.
-
-## Struttura del progetto (esempio)
+## 📁 Struttura del progetto
 
 ```
 chatbot/
-├─ chatbot/           # codice sorgente
-│  ├─ __init__.py
-│  ├─ main.py         # punto d'ingresso
-│  ├─ handlers.py     # gestione dei messaggi
-│  ├─ model.py        # wrapper per il modello di linguaggio
-│  └─ utils.py
-├─ tests/             # test automatici
-├─ requirements.txt
-├─ README.md
-└─ .env.example       # esempio di variabili d'ambiente
+├── app_completa.py        # App principale Streamlit
+├── requirements.txt       # Dipendenze Python
+├── chat_log.jsonl         # Log conversazioni (generato a runtime)
 ```
 
-Aggiorna questa sezione in base ai file effettivi presenti nel repository.
+---
 
-## Testing
+## 🔧 Configurazione sidebar
 
-Se usi pytest, comandi tipici per eseguire i test:
+| Parametro | Default | Descrizione |
+|-----------|---------|-------------|
+| Nome chatbot | `Chatbot WiData` | Titolo visualizzato nell'interfaccia |
+| Temperature | `0.7` | Creatività delle risposte (0.0 = deterministico, 1.0 = creativo) |
+| Chunk RAG | `3` | Numero di chunk PDF da includere nel contesto |
 
-```bash
-pip install -r requirements-dev.txt
-pytest -q
+---
+
+## 📝 Formato log conversazioni
+
+Le conversazioni vengono salvate in `chat_log.jsonl`, una riga per interazione:
+
+```json
+{"timestamp": "2026-06-09T10:08:31.333452", "domanda": "Autonomia?", "risposta": "Il sensore dura 2 anni.", "len_contesto": 15}
 ```
 
-Scrivi test per le parti critiche: gestione input, integrazione con il modello, e logging.
+---
 
-## Debug e logging
+## 🛡️ Sicurezza
 
-- Imposta `LOG_LEVEL=DEBUG` in sviluppo per maggiori dettagli
-- Usa il modulo `logging` per tracciare input, output ed errori
+- **Prompt injection**: filtro su pattern vietati (`ignore previous instructions`, ecc.)
+- **Limite input**: massimo 2000 caratteri per messaggio
+- **Grounding documentale**: il modello risponde _solo_ in base ai documenti caricati; se non ha informazioni, lo dichiara esplicitamente
 
-## Contribuire
 
-Contributi benvenuti! Procedura suggerita:
+---
 
-1. Fork del repository
-2. Crea un branch per la tua feature o fix: `git checkout -b feature/descrizione`
-3. Implementa la modifica e aggiungi test
-4. Apri una pull request descrivendo i cambiamenti
+## 📄 Licenza
 
-## Licenza
+Distribuito sotto licenza MIT. Vedi `LICENSE` per i dettagli.
 
-Aggiungi qui la licenza scelta (ad esempio MIT):
-
-```
-MIT License
-Copyright (c) 2026 lorymasia
-```
-
-Sostituisci con la licenza definitiva del progetto.
-
-## Contatti
-
-Per domande o richieste, apri un'issue su GitHub o contatta l'autore.
+---
